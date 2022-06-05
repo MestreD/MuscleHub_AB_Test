@@ -6,6 +6,9 @@ from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator # for creating w
 from collections import Counter   #for counting objects
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure # to create a figure in matplotlib
+from PIL import Image
+import streamlit as st
+from scipy.stats import chi2_contingency
 
 # Images for the app:
 image = Image.open('ab.png')
@@ -25,10 +28,10 @@ with header:
     col1, col_mid, col2 = st.columns((1, 0.1, 1))
     with col1:
         st.markdown("""
-        Currently, when a MuscleHub visitor purchases a membership, they follow the following steps:
-            - **Take a fitness test with a personal trainer.**\n
-            - **Fill out an application for the gym.**\n
-            - **Send in their payment for their first month’s membership.\n
+        Currently, when a MuscleHub visitor purchases a membership, they follow the following steps:\n
+        - Take a fitness test with a personal trainer.
+        - Fill out an application for the gym.
+        - Send in their payment for their first month’s membership.
  """)
     with col2:
         st.image(image)
@@ -37,220 +40,180 @@ st.markdown("""---""")
 
 
 with dataset:
-    st.header("Data Acquisition")  
-    col1, col_mid, col2 = st.columns((1, 0.1, 1))
-    
-        st.write("Tweepy is an open-source python package to access the Twitter API. Using this package, we can retrieve tweets of users, retweets etc. In our project, we will use this package to get live tweets based on two given search string and limiting the data extraction specifying the number of tweets desired")
-  
+        st.markdown(""""We think that the fitness test intimidates some prospective members, so we has set up an A/B test.
 
+**Visitors are randomly be assigned to one of two groups:**
 
-  
+**Group A** is still asked to take a fitness test with a personal trainer.\n
+**Group B** skips the fitness test and proceed directly to the application.\n
+The hypothesis is that visitors assigned to Group B will be more likely to eventually purchase a membership to MuscleHub than visitors assigned to Group A. So that the null and alternate hypotheses are as follows:
 
-    st.write('\n') 
-    st.subheader("Raw Data") 
+**Null Hypothesis** = There will no difference between the visitors in Group A that purchase membership and the visitors in Group B that purchase membership.\n
+**Alternate Hypothesis** = There will be more visitors in Group B that will purchase membership than visitors in Group A that will purchase membership.\n
+The significance threshold we will set as the benchmark to either accept or fail to reject the null hypothesis will be:
 
-    col1, col_mid, col2 = st.columns((1, 0.1, 1))
-    with col1:
-        if companyA == "TSLA":
-            companyA_name = "Tesla"
-            st.write(companyA_name)
-            companyA_df = scrape("TSLA", 500)
-            st.write(companyA_df.head())
-        if companyA == "NIO":
-            companyA_name = "NIO"
-            st.write(companyA_name)
-            companyA_df = scrape("NIO", 500)
-            st.write(companyA_df.head())
-        if companyA == "RIVN":
-            companyA_name = "Rivian"
-            st.write(companyA_name)
-            companyA_df = scrape("RIVN", 500)
-            st.write(companyA_df.head())
-
-    with col2:
-        if companyA == "TSLA":
-            st.image(image_tesla)
-            st.write('[https://www.tesla.com/](https://www.tesla.com/)')
-        if companyA == "NIO":
-            st.image(image_nio)
-            st.write('[https://www.nio.com/](https://www.nio.com/)')
-        if companyA == "RIVN":
-            st.image(image_rivian)
-            st.write('[https://rivian.com/](https://rivian.com/)')
-           
-    st.write('\n')     
+**𝛼 = 0.05**
+""") 
+st.markdown("""---""")  
+with dataset :
+    st.subheader("Dataset")
+    st.write("Like most businesses, keeps they're data in a SQL database. I have already downloaded the data from her database to a csv file, and will load it using pandas to conduct A/B testing for the MuscleHub Gym.")
     col1, col_mid, col2 = st.columns((1, 0.1, 1))
     with col1:
-        if companyB == "TSLA":
-            companyB_name = "Tesla"
-            st.write(companyB_name)
-            companyB_df = scrape("TSLA", 500)
-            st.write(companyB_df.head())
-        if companyB == "NIO":
-            companyB_name = "NIO"
-            st.write(companyB_name)
-            companyB_df = scrape("NIO", 500)
-            st.write(companyB_df.head())
-        if companyB == "RIVN":
-            companyB_name = "Rivian"
-            st.write(companyB_name)
-            companyB_df = scrape("RIVN", 500)
-            st.write(companyB_df.head())
-
+        applications = pd.read_csv("applications.csv")
+        st.write("Aplications")
+        st.dataframe(applications.head())
+        purchases = pd.read_csv("purchases.csv")
+        st.write("Purchases")
+        st.dataframe(purchases.head())
     with col2:
-         if companyB == "TSLA":
-            st.image(image_tesla)
-            st.write('[https://www.tesla.com/](https://www.tesla.com/)')
-         if companyB == "NIO":
-            st.image(image_nio)
-            st.write('[https://www.nio.com/](https://www.nio.com/)')
-         if companyB == "RIVN":
-            st.image(image_rivian)
-            st.write('[https://rivian.com/](https://rivian.com/)')
-    st.markdown("""---""")
+        fitness_tests = pd.read_csv("fitness_tests.csv")
+        st.write("Fitness tests")
+        st.dataframe(fitness_tests.head())
+        visits = pd.read_csv("visits.csv")
+        st.write("Visits")
+        st.dataframe(visits.head())
 
-    companyA_pt = preprocess_text("".join(companyA_df.tweets), custom_stopwords)
-    companyB_pt = preprocess_text("".join(companyB_df.tweets), custom_stopwords)
-    st.write('\n')
-    st.write('\n')
-    wordcloud1 = WordCloud (
-                        background_color = "#0E1117",
-                        width = 620,
-                        height = 410
-                            ).generate(' '.join(companyA_pt))
-    wordcloud2 = WordCloud (
-                        background_color = "#0E1117",
-                        width = 620,
-                        height = 410
-                            ).generate(' '.join(companyB_pt))
-    st.header("WordCloud")
-    st.write("This Word Cloud is a visual displays of tweets content – text analysis that displays the most prominent or frequent words in the data collected.")  
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    fig.patch.set_facecolor("#0E1117")
-    ax1.imshow(wordcloud1, interpolation='bilInear')
-    ax1.set_title(companyA, color="white")
-    ax1.axis('off')
-    ax1.patch.set_facecolor("#0E1117")
-    ax2.imshow(wordcloud2, interpolation='bilInear')
-    ax2.set_title(companyB, color="white")
-    ax2.axis('off')
-    ax2.patch.set_facecolor("#0E1117")
-    st.pyplot(fig)
-    st.markdown("""---""")
+st.markdown("## Joining all the data")
+st.markdown("""It would be helpful to have a single DataFrame with all of this data. \n
+A DataFrame containing all of this data. Not all visits in **visits.csv** occurred during the A/B test, only data where `visit_date` is on or after 7-1-17.
+""")
+visits =  visits[visits["visit_date"] >= "7-1-17"]
+df = visits.merge(fitness_tests, on=["first_name", "last_name", "email",  "gender"], how="left").merge(applications, on=["first_name", "last_name", "email", "gender"], how="left").merge(purchases, on=["first_name", "last_name", "email",  "gender"], how="left")
 
-    st.subheader("Finding tweets sentiment. Part 1")
-    st.write("NLTK already has a built-in, pretrained sentiment analyzer called VADER (Valence Aware Dictionary and sEntiment Reasoner). Since VADER is pretrained, you can get results more quickly than with many other analyzers. Is best suited for language used in social media, like Twitter with short sentences and some slang and abbreviations to classify the sentiment on each tweet, and them plot the sum with the library plotly.") 
-    # Clean the data and create a new column with it.
-    companyA_df["clean_tweet"] = companyA_df["tweets"].apply(lambda x: clean_text(x, custom_stopwords))
-    companyB_df["clean_tweet"] = companyB_df["tweets"].apply(lambda x: clean_text(x, custom_stopwords))
-    # Now we can apply the sentiment function and create a new column with it.
-    companyA_df["sentiment"] = companyA_df["clean_tweet"].apply(sentiment)
-    companyB_df["sentiment"] = companyB_df["clean_tweet"].apply(sentiment)
+st.markdown("## Visualize the Groups")
+st.markdown("Create new ab_test_group variable")
+df["AB_test_group"] = df.fitness_test_date.apply(lambda x: "A" if  pd.notnull(x) else "B")
+col1, col_mid, col2 = st.columns((1, 0.1, 1))
+with col1:
+    st.markdown("Obtain value counts of each group")
+    st.write(df.AB_test_group.value_counts())
+with col2:
+    st.markdown("Obtain percentages of each group")
+    st.write(df.AB_test_group.value_counts(normalize=True))
 
-    # Total sentiment count
-    sentiment_count_A =  companyA_df.groupby('sentiment')['sentiment'].count()
-    sentiment_count_B = companyB_df.groupby('sentiment')['sentiment'].count()
-    #Creating a df with that count to plot. 
-    total_sentiments_A = sentiment_count_A.to_frame()
-    total_sentiments_A.rename(columns={"sentiment":"count"}, inplace=True)
-    total_sentiments_A.reset_index(inplace=True)
-    total_sentiments_A["company"] = companyA_name
+fig = px.pie(df, "AB_test_group", title="AB test group")
+st.plotly_chart(fig, use_container_width=True)
 
-    total_sentiments_B = sentiment_count_B.to_frame()
-    total_sentiments_B.rename(columns={"sentiment":"count"}, inplace=True)
-    total_sentiments_B.reset_index(inplace=True)
-    total_sentiments_B["company"] = companyB_name
+st.markdown("## Count of applications")
+st.markdown("""The sign-up process for MuscleHub has several steps:
 
-    total_sentiments = [total_sentiments_A, total_sentiments_B]
+1. Take a fitness test with a personal trainer (only Group A).
+2. Fill out an application for the gym.
+3. Send in their payment for their first month's membership.
 
-    total_sentiments = pd.concat(total_sentiments, ignore_index=True)
+Determining the percentage of people in each group who complete Step 2, filling out an application.""")
 
-    # Plotly
-    colours = {
-        companyA: "#EF3A4C",
-        companyB: "#3EC1CD"
-    }
-    fig = px.histogram(total_sentiments, x="sentiment", y="count",
-                color='company', barmode='group',
-                height=600,  color_discrete_map=colours)
-    st.plotly_chart(fig, use_container_width=True)
-    st.markdown("""---""")
-    st.subheader("Finding tweets sentiment. Part 2")
-    st.write("In this part I will use the library TextBlob. The sentiment property returns a namedtuple of the form Sentiment(polarity, subjectivity). The polarity score is a float within the range [-1.0, 1.0].  Meaning -1 negative, 0 neutral and +1 positive")
+# Create is_application variable
+df["is_application"] = df.application_date.apply(lambda x: "Application"  if pd.notnull(x) else "No_Application")
+# Create new app_counts DataFrame
+app_counts = df.groupby(["AB_test_group", "is_application"]).first_name.count().reset_index()
+app_pivot = pd.pivot_table(app_counts, index="AB_test_group",
+                    columns=["is_application"], values='first_name').reset_index()
+# Create the total variable
+app_pivot['Total'] = app_pivot.Application + app_pivot.No_Application
+# Create the percent with application variable
+app_pivot["Percent _with_Application"] = app_pivot.Application / app_pivot.Total
+st.dataframe(app_pivot)
 
-    #building new columns with calculations
-    companyA_df["polarity"] = companyA_df["clean_tweet"].apply(lambda x: TextBlob(x).sentiment[0])
-    companyA_df["subjectivity"] = companyA_df["clean_tweet"].apply(lambda x: TextBlob(x).sentiment[1])
-    companyB_df["polarity"] = companyB_df["clean_tweet"].apply(lambda x: TextBlob(x).sentiment[0])
-    companyB_df["subjectivity"] = companyB_df["clean_tweet"].apply(lambda x: TextBlob(x).sentiment[1])
+st.write("It looks like more people from Group B turned in an application.  Why might that be?\nWe need to know if this difference is statistically significant.")
+st.markdown("## The statistical significance of applications")
+st.markdown("Having calculated the difference in who turned in an application between groups, we should think if this difference is statistically significant.")
+st.markdown("P-value")
+contingency = [[250, 2254], [325, 2175]]
+st.write(chi2_contingency(contingency))
+st.write("A p-value of 0.00096 relative to a significance threshold of 0.05 indicates that there is a statistically significant difference between the two groups.")
+st.markdown("## Count of memberships from applications")
+st.write("Of those who picked up an application, how many purchased a membership?\nDetermine how many potential customers purchased a membership out of those that picked up an application.\nIt looks like people who took the fitness test were more likely to purchase a membership if they picked up an application. Why might that be?")
+# Create an is_member variable
+df["is_member"] = df.purchase_date.apply(lambda x: "member" if pd.notnull(x) else "not_member")
+# Create the just_apps DataFrame
+just_apps = df[df.is_application == "Application"]
+# Create member_count DataFrame
+member_count = just_apps.groupby(["AB_test_group", "is_member"]).first_name.count().reset_index()
+# Pivot member_count
+member_pivot = pd.pivot_table(member_count, index="AB_test_group", columns=["is_member"], values="first_name").reset_index()
+# Create the Total variable
+member_pivot["total"] = member_pivot.member + member_pivot.not_member
+# Create the Percent Purchase variable
+member_pivot["percent_purchase"] = member_pivot.member / member_pivot.total
+st.write(member_pivot)
+st.write("It looks like people who took the fitness test were more likely to purchase a membership if they picked up an application.  Why might that be?")
+st.markdown("## The statistical significance of memberships")
+st.markdown("""Calculate if the difference between the following groups is statistically significant: \n
+- The customers that picked up an application and took a fitness test.\n
+- The customers that did not take a fitness test and picked up an application.""")
+# Calculate the p-value
+contingency = [[200, 50], [250, 75]]
+st.write(chi2_contingency(contingency))
+st.write("A p-value of 0.432 relative to a significance threshold of 0.05 does not reflect a statistically significant difference between the two groups, and would lead us to fail to reject the null hypothesis.")
+st.markdown("## Count of all memberships")
+st.write("Previously, we looked at what percentage of people who picked up applications purchased memberships. \nWhat percentage of ALL visitors purchased memberships.?")
+# Create final_member_count DataFrame
+all_memberships = df.groupby(['AB_test_group', 'is_member']).first_name.count().reset_index()
+# Pivot final_member_count
+all_memberships_pivot = all_memberships.pivot(index="AB_test_group", columns="is_member", values="first_name").reset_index()
+all_memberships_pivot
+# Create the Total variable
+all_memberships_pivot["total"] = all_memberships_pivot.member + all_memberships_pivot.not_member
+# Create the Percent Purchase variable
+all_memberships_pivot["total_percent"] = all_memberships_pivot.member / all_memberships_pivot.total
+st.write(all_memberships_pivot)
+st.write("Previously, when we only considered people who had already picked up an application, we saw that there was no significant difference in membership between Group A and Group B.\nNow, when we consider all people who visit MuscleHub, we see that there might be a significant difference in memberships between Group A and Group B.")
+st.markdown("## The statistical significance between groups")
+st.write("Determine if there is a significant difference in memberships between Group A and Group B.")
+# Calculate the p-value
+contingency = [[200, 2304], [250, 2250]]
+st.write(chi2_contingency(contingency))
+st.write("A p-value of 0.0147 relative to a significance threshold of 0.05 indicates that there is a statistically significant difference between the two groups. This informs us that we should not reject the hypothesis that visitors assigned to Group B will be more likely to eventually purchase a membership to MuscleHub than visitors assigned to Group A.\nHowever, it is important to note that when assessing the groups among those customers that filled out an application, those that completed a fitness test (Group A), were more likely to make a purchase than those customers that did not complete a fitness test (Group B).")
+st.markdown("""---""")  
+st.markdown("## Visualize the results")
+st.markdown("""The difference between Group A (people who were given the fitness test) and Group B (people who were not given the fitness test) at each state of the process:\n
 
-    # Building dataframes for the visualization. 
-    companyA_ma = companyA_df[["tweet_date", "polarity"]]
-    companyA_ma = companyA_ma.sort_values(by="tweet_date", ascending=True)
-    companyA_ma["MA Polarity"] = companyA_ma.polarity.rolling(10, min_periods=3).mean()
+- Percent of visitors who apply.
+- Percent of applicants who purchase a membership.
+- Percent of visitors who purchase a membership.""")
 
-    companyB_ma = companyB_df[["tweet_date", "polarity"]]
-    companyB_ma = companyB_ma.sort_values(by="tweet_date", ascending=True)
-    companyB_ma["MA Polarity"] = companyB_ma.polarity.rolling(10, min_periods=3).mean()
+fig = px.bar(app_pivot, y="Percent _with_Application", x="AB_test_group", color="AB_test_group", title='Percent of visitors who apply')
+for data in fig['data']:
+        data.width = 0.5
+fig.update_layout(title_x=0.5, yaxis = dict(tickmode = 'array', tickvals = [0, 0.05, 0.10, 0.15, 0.20], ticktext = ['0%', '5%', '10%', '15%', '20%']), xaxis = dict(
+        tickmode = 'array',
+        tickvals = [0, 1],
+        ticktext =  ["Fitness Test", "No Fitness Test"]), yaxis_title=None, xaxis_title=None)
+st.plotly_chart(fig, use_container_width=True)
+st.markdown("""---""")  
+fig = px.bar(member_pivot, y="percent_purchase", x="AB_test_group", color="AB_test_group", title="Percent of applicants who purchase a membership.")
+for data in fig['data']:
+        data.width = 0.5
+fig.update_layout(title_x=0.5, yaxis = dict(tickmode = 'array', tickvals = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1], ticktext = ['0%', '10%', '20%', '30%', '40%', '50%', '60%', '70%', '80%', '90%', '100%']),  xaxis = dict(
+        tickmode = 'array',
+        tickvals = [0, 1],
+        ticktext =  ["Fitness Test", "No Fitness Test"]), yaxis_title=None, xaxis_title=None)
+st.plotly_chart(fig, use_container_width=True)
+st.markdown("""---""")  
+fig = px.bar(all_memberships_pivot, y="total_percent", x="AB_test_group", color="AB_test_group", title='Percent of visitors who purchase a membership.')
+for data in fig['data']:
+        data.width = 0.5
+fig.update_layout(title_x=0.5, yaxis = dict(tickmode = 'array', tickvals = [0, 0.05, 0.10, 0.15, 0.20], ticktext = ['0%', '5%', '10%', '15%', '20%']), xaxis = dict(
+        tickmode = 'array',
+        tickvals = [0, 1],
+        ticktext =  ["Fitness Test", "No Fitness Test"]), yaxis_title=None, xaxis_title=None)
+st.plotly_chart(fig, use_container_width=True)
+st.markdown("""---""")  
 
-    #Plotting both graph with Plotly. 
-    fig1 = px.line(companyA_ma, x="tweet_date", y="MA Polarity", title= companyA_name + " polarity moving average for today")
-    fig1.update_traces(line_color='#EF3A4C')
-    fig1.update_xaxes(rangeslider_visible=True)
-    st.plotly_chart(fig1, use_container_width=True)
+st.markdown("Creating a [wordcloud](https://pypi.org/project/wordcloud/) visualization that can be use to create an ad for the MuscleHub Gym with the data in `interviews.txt`. ")
+# Open and read the interviews.txt file
+interviews = open(r"interviews.txt", encoding='utf8')
+txtContent = interviews.read()
+st.write("The Content of text file is : ", txtContent)
+# Print the length of the new string
+st.write('There are {} words in the total interviews.txt file.'.format(len(txtContent)))
+# Create a wordcloud object
+wordcloud = WordCloud(width=2500, height=1250).generate(txtContent)
 
-    fig2 = px.line(companyB_ma, x="tweet_date", y="MA Polarity", title= companyB_name + " polarity moving average for today")
-    fig2.update_traces(line_color='#3EC1CD')
-    fig2.update_xaxes(rangeslider_visible=True)
-    st.plotly_chart(fig2, use_container_width=True)
-    st.subheader("Visualizing Subjectivity and Polarity")
-    st.write("Subjectivity quantifies the amount of personal opinion and factual information contained in the text. The higher subjectivity means that the text contains personal opinion rather than factual information.")
-
-    trace1 = go.Scatter(x = companyA_df["polarity"], y = companyA_df["subjectivity"], name=companyA_name, marker=dict(color='rgb(34,163,192)'), mode='markers')
-    trace2 = go.Scatter(x = companyB_df["polarity"], y = companyB_df["subjectivity"], name=companyB_name, mode='markers')
-
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-    fig.add_trace(trace1)
-    fig.add_trace(trace2,secondary_y=True)
-    fig['layout'].update(height = 900, width = 700, title = "Polarity and subjectivity scatter plot", xaxis_title="Polarity", yaxis_title="Subjectivity")
-    st.plotly_chart(fig)
-
-    st.markdown("""---""")
-    st.subheader("Counting the most used words by sentiment. ")
-        # Joining and preprocessing all tweets based on sentiment.
-    companyA_preprocess_positive = preprocess_text("".join(companyA_df["tweets"][companyA_df["sentiment"] == "positive"]), custom_stopwords)
-    companyA_preprocess_negative = preprocess_text("".join(companyA_df["tweets"][companyA_df["sentiment"] == "negative"]), custom_stopwords)
-
-    companyB_preprocess_positive = preprocess_text("".join(companyB_df["tweets"][companyB_df["sentiment"] == "positive"]), custom_stopwords)
-    companyB_preprocess_negative = preprocess_text("".join(companyB_df["tweets"][companyB_df["sentiment"] == "negative"]), custom_stopwords)
-
-    #Counting the words of each sentiment. 
-    companyA_bow_positive = Counter(companyA_preprocess_positive)
-    companyA_bow_negative = Counter(companyA_preprocess_negative)
-
-    companyB_bow_positive = Counter(companyB_preprocess_positive)
-    companyB_bow_negative = Counter(companyB_preprocess_negative)
-
-    # Printing the most common words by sentiment. 
-    col1, col_mid, col2 = st.columns((1, 0.1, 1))
-    with col1:
-        st.write("Positive words  for " + companyA_name +".")
-        most_common_companyA_positive = companyA_bow_positive.most_common(10)
-        st.write(str(most_common_companyA_positive))
-
-        st.write("Negative words for " + companyA_name +".")
-        most_common_companyA_negative = companyA_bow_negative.most_common(10)
-        st.write(str(most_common_companyA_negative))
-
-    with col2:
-        st.write("Positive words  for " + companyB_name +".")
-        most_common_companyB_positive = companyB_bow_positive.most_common(10)
-        st.write(str(most_common_companyB_positive))
-
-        st.write("Negative words for " + companyB_name +".")
-        most_common_companyB_negative = companyB_bow_negative.most_common(10)
-        st.write(str(most_common_companyB_negative))
-
-    st.markdown("""---""")
-
-    st.subheader("This is the end of this project in which I have some limitations, the free tweeter API doesn't let me collect tweets selecting specific dates from which the comparison will be more precise in time. Positive and negative word count doesn't give much insight, so in next projects N-grams will be incorporated to gain more context about those words and feelings.")
+# Display the wordcloud with MatplotLib and save figure
+figure(num=None, figsize=(20, 16), facecolor='w', edgecolor='k')
+plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis('off')
+st.write(plt.show())
