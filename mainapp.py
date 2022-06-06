@@ -1,7 +1,5 @@
 import pandas as pd 
 import plotly.express as px
-import plotly.io as pio
-pio.renderers.default = "notebook_connected"
 from wordcloud import WordCloud, STOPWORDS, ImageColorGenerator # for creating wordclouds
 from collections import Counter   #for counting objects
 import matplotlib.pyplot as plt
